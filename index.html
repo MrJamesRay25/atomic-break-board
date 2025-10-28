@@ -59,38 +59,35 @@
   </div>
 
 <script>
-// ===== EDIT THIS (put your published CSV link) =====
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2v6-URv5jiKt-jUeqhddeSqYAKE1Gr2405YGaZRvxeWFsRWMu2fAlN9j9mMz24Gp70dchwCnj7xec/pubhtml?gid=0&single=true";
-
-// ===== Settings =====
+// ===== CONFIG =====
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2v6-URv5jiKt-jUeqhddeSqYAKE1Gr2405YGaZRvxeWFsRWMu2fAlN9j9mMz24Gp70dchwCnj7xec/pub?gid=0&single=true&output=csv";
 const HEADER  = "The Atomic Break Board";
 const REFRESH = 8;   // seconds
 const SPEED   = 22;  // px/sec for ticker
-const FALLBACK_LOGO = "https://upload.wikimedia.org/wikipedia/commons/1/1b/Baseball.svg";
 
-// Turn on if GitHub Pages → Google CSV gives CORS errors:
-const USE_CORS_PROXY = false; // set to true only if needed
+// Inline fallback icon (never 404s)
+const FALLBACK_LOGO =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><style>
+    .s{fill:none;stroke:%23cfe7ff;stroke-width:3}
+    .l{stroke:%239ff5d1}
+  </style></defs>
+  <circle cx="32" cy="32" r="28" class="s"/>
+  <path class="s l" d="M14 20c8 10 28 10 36 0"/>
+  <path class="s l" d="M14 44c8-10 28-10 36 0"/>
+</svg>`);
 
 document.getElementById("header").textContent = HEADER;
 
 // ---------- Helpers ----------
 const stripQuotes = (s) => (s||"").trim().replace(/^"|"$/g,"");
 
-// Proxy any image URL to bypass hotlink/CORS (works with mlbstatic)
-function proxImg(url){
-  if (!url) return FALLBACK_LOGO;
-  try {
-    const u = new URL(url);
-    const hostpath = u.host + u.pathname + (u.search || "");
-    return "https://images.weserv.nl/?url=" + encodeURIComponent(hostpath) + "&n=-1";
-  } catch { return FALLBACK_LOGO; }
-}
-
 function mkImg(url){
   const img = document.createElement("img");
-  img.referrerPolicy = "no-referrer";
+  img.referrerPolicy = "no-referrer";   // avoids hotlink blocks
   img.crossOrigin = "anonymous";
-  img.src = proxImg(url);
+  img.src = (url && url.startsWith("http")) ? url : FALLBACK_LOGO;
   img.onerror = () => { img.src = FALLBACK_LOGO; };
   return img;
 }
@@ -169,10 +166,10 @@ function render(rows){
 
 async function loadAndRender(){
   try{
-    // Cache-bust the CSV to avoid stale data from Google
+    // Cache-bust + CORS-safe fetch through AllOrigins
     const base = CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "cb=" + Date.now();
-    const url  = USE_CORS_PROXY ? ("https://corsproxy.io/?" + encodeURIComponent(base)) : base;
-    const res  = await fetch(url, { cache: "no-store" });
+    const prox = "https://api.allorigins.win/raw?url=" + encodeURIComponent(base);
+    const res  = await fetch(prox, { cache: "no-store" });
     const txt  = await res.text();
     const rows = parseCSV(txt);
     render(rows);
