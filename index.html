@@ -66,18 +66,7 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2v6-URv5jiKt-
 const HEADER  = "The Atomic Break Board";
 const REFRESH = 8;   // seconds
 const SPEED   = 22;  // px/sec for ticker
-// Inline fallback icon so it NEVER 404s
-const FALLBACK_LOGO =
-  'data:image/svg+xml;utf8,' +
-  encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs><style>
-    .s{fill:none;stroke:%23cfe7ff;stroke-width:3}
-    .l{stroke:%239ff5d1}
-  </style></defs>
-  <circle cx="32" cy="32" r="28" class="s"/>
-  <path class="s l" d="M14 20c8 10 28 10 36 0"/>
-  <path class="s l" d="M14 44c8-10 28-10 36 0"/>
-</svg>`);
+const FALLBACK_LOGO = "https://upload.wikimedia.org/wikipedia/commons/1/1b/Baseball.svg";
 
 // Turn on if GitHub Pages → Google CSV gives CORS errors:
 const USE_CORS_PROXY = false; // set to true only if needed
@@ -97,12 +86,11 @@ function proxImg(url){
   } catch { return FALLBACK_LOGO; }
 }
 
-// DO NOT proxy — mlbstatic.com serves images fine when referrer is stripped
 function mkImg(url){
   const img = document.createElement("img");
   img.referrerPolicy = "no-referrer";
   img.crossOrigin = "anonymous";
-  img.src = (url && url.startsWith("http")) ? url : FALLBACK_LOGO;
+  img.src = proxImg(url);
   img.onerror = () => { img.src = FALLBACK_LOGO; };
   return img;
 }
