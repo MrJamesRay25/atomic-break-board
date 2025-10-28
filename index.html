@@ -64,6 +64,7 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2v6-URv5jiKt-
 const HEADER  = "The Atomic Break Board";
 const REFRESH = 8;   // seconds
 const SPEED   = 22;  // px/sec for ticker
+const LOGO_BASE = "./logos/"; // local folder in your repo
 
 // Inline fallback icon (never 404s)
 const FALLBACK_LOGO =
@@ -83,24 +84,15 @@ document.getElementById("header").textContent = HEADER;
 // ---------- Helpers ----------
 const stripQuotes = (s) => (s||"").trim().replace(/^"|"$/g,"");
 
-// Turn "109.svg" -> full MLB URL. Keeps full URLs untouched.
-function normalizeLogo(url, teamName="") {
-  const u = (url || "").trim();
-  if (/^https?:\/\//i.test(u)) return u;              // already a full URL
-  // If it's just "123.svg", build the proper path.
-  const m = u.match(/^(\d+)\.svg$/i);
-  if (!m) return "";                                   // not recognized -> let fallback handle it
-  const id = m[1];
-
-  // A few clubs use "team-primary-on-light" assets instead of "team-cap-on-light".
-  // Known exceptions in your list: 117 (Angels) and 136 (Rays).
-  const primaryIds = new Set(["117","136"]);
-  const folder = primaryIds.has(id) ? "team-primary-on-light" : "team-cap-on-light";
-
-  return `https://www.mlbstatic.com/team-logos/${folder}/${id}.svg`;
+// Turn "109.svg" => "./logos/109.svg"; keep full URLs untouched
+function normalizeLogo(url){
+  const u = (url||"").trim();
+  if (/^https?:\/\//i.test(u)) return u;            // already a full URL
+  if (/^\d+\.svg$/i.test(u)) return LOGO_BASE + u;  // local file by id
+  if (u.endsWith(".svg")) return LOGO_BASE + u;     // local named svg
+  return "";                                        // let fallback handle
 }
 
-  
 function mkImg(url){
   const img = document.createElement("img");
   img.referrerPolicy = "no-referrer";
@@ -185,7 +177,7 @@ function render(rows){
 
 async function loadAndRender(){
   try{
-    // Cache-bust + CORS-safe fetch through AllOrigins
+    // CORS-safe CSV fetch through AllOrigins + cache-bust
     const base = CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "cb=" + Date.now();
     const prox = "https://api.allorigins.win/raw?url=" + encodeURIComponent(base);
     const res  = await fetch(prox, { cache: "no-store" });
