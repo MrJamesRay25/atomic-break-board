@@ -6,15 +6,11 @@
 <title>The Atomic Break Board</title>
 <link href="https://fonts.googleapis.com/css2?family=Monoton&family=Signika:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#0b1320; --panel:#0f2138; --mint:#9ff5d1; --neon:#f5e87a;
-    --avail:#34f29a; --sold:#8aa0b2; --edge:#00ffe5;
-  }
+  :root{ --bg:#0b1320; --panel:#0f2138; --mint:#9ff5d1; --neon:#f5e87a; --avail:#34f29a; --sold:#8aa0b2; --edge:#00ffe5; }
   html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:"Signika",system-ui,sans-serif;}
-  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;
-        padding:16px 18px 12px;background:radial-gradient(1200px 600px at 12% 0%, #163355 0%, var(--bg) 60%);
-        border:2px solid rgba(0,255,229,.18);border-radius:16px;
-        box-shadow:0 12px 28px rgba(0,0,0,.45), inset 0 0 22px rgba(0,255,229,.08);}
+  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;padding:16px 18px 12px;
+        background:radial-gradient(1200px 600px at 12% 0%, #163355 0%, var(--bg) 60%);
+        border:2px solid rgba(0,255,229,.18);border-radius:16px;box-shadow:0 12px 28px rgba(0,0,0,.45), inset 0 0 22px rgba(0,255,229,.08);}
   .header{font-family:"Monoton",cursive;font-size:40px;letter-spacing:2px;color:var(--neon);text-align:center;
           text-shadow:0 0 6px rgba(245,232,122,.9),0 0 18px rgba(245,232,122,.55),0 0 36px rgba(245,232,122,.35);}
   .counts{display:flex;gap:14px;justify-content:center;align-items:center;color:#cfe7ff;font-size:14px;}
@@ -22,9 +18,9 @@
   .badge .v{font-weight:700;color:var(--mint);margin-left:6px}
   .badge .g{color:var(--avail);margin-left:6px}
   .badge .r{color:#ff6b6b;margin-left:6px}
-  .panel{position:relative;margin-top:6px;width:100%;flex:1 1 auto;
-         background:linear-gradient(180deg,#0d1e33,var(--panel));border:2px solid rgba(159,245,209,.25);border-radius:16px;
-         box-shadow:0 10px 26px rgba(0,0,0,.45), inset 0 0 18px rgba(159,245,209,.08);display:flex;flex-direction:column;overflow:hidden;}
+  .panel{position:relative;margin-top:6px;width:100%;flex:1 1 auto;background:linear-gradient(180deg,#0d1e33,var(--panel));
+         border:2px solid rgba(159,245,209,.25);border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.45), inset 0 0 18px rgba(159,245,209,.08);
+         display:flex;flex-direction:column;overflow:hidden;}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;padding:10px;overflow:auto;}
   .card{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(159,245,209,.07);
         border:1px solid rgba(159,245,209,.28);box-shadow:0 3px 12px rgba(0,0,0,.28), inset 0 0 12px rgba(159,245,209,.08);color:#cfe7ff;}
@@ -37,8 +33,7 @@
   .ticker-wrap{margin-top:auto;width:100%;border-top:1px solid rgba(0,255,229,.14);background:rgba(3,12,24,.35);}
   .ticker-mask{overflow:hidden;width:100%;}
   .ticker-track{display:flex;align-items:center;gap:20px;padding:8px 16px;white-space:nowrap;will-change:transform;}
-  .ti{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid rgba(159,245,209,.25);
-      border-radius:999px;background:rgba(159,245,209,.08)}
+  .ti{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid rgba(159,245,209,.25);border-radius:999px;background:rgba(159,245,209,.08)}
   .ti.sold{opacity:.55;filter:saturate(.2)}
   .ti .tag{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid;}
   .ti .tag.av{color:var(--avail);border-color:rgba(52,242,154,.35);background:rgba(52,242,154,.15)}
@@ -64,17 +59,41 @@
   </div>
 
 <script>
-// ===== CONFIG (EDIT THIS) =====
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2v6-URv5jiKt-jUeqhddeSqYAKE1Gr2405YGaZRvxeWFsRWMu2fAlN9j9mMz24Gp70dchwCnj7xec/pub?gid=0&single=true&output=csv"; // must end with output=csv
+// ===== EDIT THIS (put your published CSV link) =====
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2v6-URv5jiKt-jUeqhddeSqYAKE1Gr2405YGaZRvxeWFsRWMu2fAlN9j9mMz24Gp70dchwCnj7xec/pubhtml?gid=0&single=true";
+
+// ===== Settings =====
 const HEADER  = "The Atomic Break Board";
 const REFRESH = 8;   // seconds
 const SPEED   = 22;  // px/sec for ticker
 const FALLBACK_LOGO = "https://upload.wikimedia.org/wikipedia/commons/1/1b/Baseball.svg";
 
+// Turn on if GitHub Pages → Google CSV gives CORS errors:
+const USE_CORS_PROXY = false; // set to true only if needed
+
 document.getElementById("header").textContent = HEADER;
 
-// ---------- Utilities ----------
-function stripQuotes(s){ return (s||"").trim().replace(/^"|"$/g,""); }
+// ---------- Helpers ----------
+const stripQuotes = (s) => (s||"").trim().replace(/^"|"$/g,"");
+
+// Proxy any image URL to bypass hotlink/CORS (works with mlbstatic)
+function proxImg(url){
+  if (!url) return FALLBACK_LOGO;
+  try {
+    const u = new URL(url);
+    const hostpath = u.host + u.pathname + (u.search || "");
+    return "https://images.weserv.nl/?url=" + encodeURIComponent(hostpath) + "&n=-1";
+  } catch { return FALLBACK_LOGO; }
+}
+
+function mkImg(url){
+  const img = document.createElement("img");
+  img.referrerPolicy = "no-referrer";
+  img.crossOrigin = "anonymous";
+  img.src = proxImg(url);
+  img.onerror = () => { img.src = FALLBACK_LOGO; };
+  return img;
+}
 
 function parseCSV(text){
   const lines = text.trim().split(/\r?\n/);
@@ -92,15 +111,6 @@ function parseCSV(text){
     if (team) rows.push({ Team: team, Status: stat, LogoURL: logo });
   }
   return rows;
-}
-
-function mkImg(url){
-  const img = document.createElement("img");
-  img.referrerPolicy = "no-referrer";
-  img.crossOrigin = "anonymous";
-  img.src = (url && url.startsWith("http")) ? url : FALLBACK_LOGO;
-  img.onerror = () => img.src = FALLBACK_LOGO;
-  return img;
 }
 
 function render(rows){
@@ -124,15 +134,10 @@ function render(rows){
   (avail.length ? avail : items).forEach(it => {
     const card = document.createElement("div");
     card.className = "card " + (it.status==="SOLD" ? "sold" : "available");
-    const logo = document.createElement("div");
-    logo.className = "logo";
+    const logo = document.createElement("div"); logo.className = "logo";
     const img = mkImg(it.logo);
-    const nm = document.createElement("div");
-    nm.className = "name";
-    nm.textContent = it.team;
-    logo.appendChild(img);
-    card.appendChild(logo);
-    card.appendChild(nm);
+    const nm  = document.createElement("div"); nm.className = "name"; nm.textContent = it.team;
+    logo.appendChild(img); card.appendChild(logo); card.appendChild(nm);
     grid.appendChild(card);
   });
 
@@ -142,7 +147,7 @@ function render(rows){
     el.className = "ti " + (it.status==="SOLD" ? "sold" : "available");
     const img = mkImg(it.logo); img.width=22; img.height=22;
     const name = document.createElement("span"); name.textContent = it.team;
-    const tag = document.createElement("span");
+    const tag  = document.createElement("span");
     tag.className = "tag " + (it.status==="SOLD" ? "sd" : "av");
     tag.textContent = (it.status==="SOLD" ? "SOLD" : "AVAILABLE");
     el.appendChild(img); el.appendChild(name); el.appendChild(tag);
@@ -165,9 +170,10 @@ function render(rows){
 async function loadAndRender(){
   try{
     // Cache-bust the CSV to avoid stale data from Google
-    const url = CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "cb=" + Date.now();
-    const res = await fetch(url, { cache: "no-store" });
-    const txt = await res.text();
+    const base = CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "cb=" + Date.now();
+    const url  = USE_CORS_PROXY ? ("https://corsproxy.io/?" + encodeURIComponent(base)) : base;
+    const res  = await fetch(url, { cache: "no-store" });
+    const txt  = await res.text();
     const rows = parseCSV(txt);
     render(rows);
   }catch(e){
