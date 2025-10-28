@@ -59,6 +59,19 @@
   </div>
 
 <script>
+  const LOGO_BASE = "./logos/"; // Local folder in your repo
+
+function normalizeLogo(url){
+  const u = (url || "").trim();
+  if (/^https?:\/\//i.test(u)) {
+    // Full URL — convert to local filename
+    const m = u.match(/(\d+\.svg)$/);
+    return m ? LOGO_BASE + m[1] : u;
+  }
+  if (/^\d+$/.test(u)) return LOGO_BASE + u + ".svg"; // just a number
+  if (/\.svg$/i.test(u)) return LOGO_BASE + u.replace(/^.*\//, ""); // filename
+  return FALLBACK_LOGO;
+}
 // ===== CONFIG =====
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2v6-URv5jiKt-jUeqhddeSqYAKE1Gr2405YGaZRvxeWFsRWMu2fAlN9j9mMz24Gp70dchwCnj7xec/pub?gid=0&single=true&output=csv";
 const HEADER  = "The Atomic Break Board";
