@@ -206,19 +206,21 @@ function render(rows){
   });
 }
 
+// URL of your Apps Script endpoint
+const DATA_URL = "https://script.google.com/macros/s/AKfycbx_MQxoGuxw2WlOMZlBO4-_ou2wFyqbooZapEjedHLP-bfHvNqsy1oUA234Hd9Uoqg9/exec";
+  
 async function loadAndRender(){
   try{
-    // CORS-safe CSV fetch through AllOrigins + cache-bust
-    const base = CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "cb=" + Date.now();
-    const prox = "https://api.allorigins.win/raw?url=" + encodeURIComponent(base);
-    const res  = await fetch(prox, { cache: "no-store" });
-    const txt  = await res.text();
-    const rows = parseCSV(txt);
-    render(rows);
-  }catch(e){
-    console.error(e);
-  }
+    const res = await fetch(DATA_URL + "?cb=" + Date.now(), { cache: "no-store" });
+    const rows = await res.json(); // Expect [{Team, Status, LogoURL?}]
+    render(rows.map(r => ({
+      Team: r.Team,
+      Status: r.Status,
+      LogoURL: r.LogoURL || ""
+    })));
+  }catch(e){ console.error(e); }
 }
+
 
 loadAndRender();
 setInterval(loadAndRender, Math.max(5, REFRESH) * 1000);
