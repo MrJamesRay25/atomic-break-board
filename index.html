@@ -8,20 +8,23 @@
 <style>
   :root{ --bg:#0b1320; --panel:#0f2138; --mint:#9ff5d1; --neon:#f5e87a; --avail:#34f29a; --sold:#8aa0b2; }
   html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:"Signika",system-ui,sans-serif;}
-  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;padding:16px 18px 12px;
+  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;gap:8px;padding:12px 14px 10px;
         background:radial-gradient(1200px 600px at 12% 0%, #163355 0%, var(--bg) 60%);
         border:2px solid rgba(0,255,229,.18);border-radius:16px;box-shadow:0 12px 28px rgba(0,0,0,.45), inset 0 0 22px rgba(0,255,229,.08);}
-  .header{font-family:"Monoton",cursive;font-size:40px;letter-spacing:2px;color:var(--neon);text-align:center;
-          text-shadow:0 0 6px rgba(245,232,122,.9),0 0 18px rgba(245,232,122,.55),0 0 36px rgba(245,232,122,.35);}
-  .counts{display:flex;gap:14px;justify-content:center;align-items:center;color:#cfe7ff;font-size:14px;}
+  .toprow{display:flex;justify-content:space-between;align-items:center}
+  .header{font-family:"Monoton",cursive;font-size:32px;letter-spacing:2px;color:var(--neon);
+          text-shadow:0 0 6px rgba(245,232,122,.9),0 0 18px rgba(245,232,122,.55);}
+  .status{font-size:12px;color:#cfe7ff;opacity:.85}
+  .status .err{color:#ff7b7b}
+  .counts{display:flex;gap:12px;justify-content:center;align-items:center;color:#cfe7ff;font-size:14px;}
   .badge{padding:6px 10px;border-radius:999px;border:1px solid rgba(159,245,209,.3);background:rgba(159,245,209,.08);}
   .badge .v{font-weight:700;color:var(--mint);margin-left:6px}
   .badge .g{color:var(--avail);margin-left:6px}
   .badge .r{color:#ff6b6b;margin-left:6px}
-  .panel{position:relative;margin-top:6px;width:100%;flex:1 1 auto;background:linear-gradient(180deg,#0d1e33,var(--panel));
+  .panel{position:relative;margin-top:4px;width:100%;flex:1 1 auto;background:linear-gradient(180deg,#0d1e33,var(--panel));
          border:2px solid rgba(159,245,209,.25);border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.45), inset 0 0 18px rgba(159,245,209,.08);
          display:flex;flex-direction:column;overflow:hidden;}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;padding:10px;overflow:auto;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:10px;overflow:auto;}
   .card{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;background:rgba(159,245,209,.07);
         border:1px solid rgba(159,245,209,.28);box-shadow:0 3px 12px rgba(0,0,0,.28), inset 0 0 12px rgba(159,245,209,.08);color:#cfe7ff;}
   .swatch{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
@@ -43,7 +46,10 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="header" id="header">The Atomic Break Board</div>
+    <div class="toprow">
+      <div class="header" id="header">The Atomic Break Board</div>
+      <div class="status" id="status">Starting…</div>
+    </div>
     <div class="counts">
       <div class="badge">Teams <span class="v" id="countTotal">0</span></div>
       <div class="badge">Available <span class="g" id="countAvail">0</span></div>
@@ -63,8 +69,9 @@
 // ===== CONFIG =====
 const DATA_URL = "https://script.google.com/macros/s/AKfycbx_MQxoGuxw2WlOMZlBO4-_ou2wFyqbooZapEjedHLP-bfHvNqsy1oUA234Hd9Uoqg9/exec";
 const HEADER  = "The Atomic Break Board";
-const REFRESH = 3;   // seconds (fast updates)
+const REFRESH = 3;   // seconds
 const SPEED   = 22;  // px/sec ticker speed
+
 document.getElementById("header").textContent = HEADER;
 
 // ---- Team colors ----
@@ -78,22 +85,29 @@ const COLORS = {
 };
 const DEFAULT_COLOR = "#6bcfc9";
 
+// Helpers
+const $ = sel => document.querySelector(sel);
 const strip = s => (s||"").trim();
 const initials = n => n.split(/\s+/).map(x=>x[0]||"").join("").slice(0,3).toUpperCase();
 const colorFor = t => COLORS[t] || COLORS[t.split(" ").pop()] || DEFAULT_COLOR;
 
+function setStatus(msg, isErr=false){
+  const el = $("#status");
+  el.innerHTML = isErr ? `<span class="err">${msg}</span>` : msg;
+}
+
 function render(rows){
-  const grid = document.getElementById("grid");
-  const ticker = document.getElementById("ticker");
+  const grid = $("#grid");
+  const ticker = $("#ticker");
   grid.innerHTML = ""; ticker.innerHTML = "";
 
   const items = rows.map(r => ({team:r.Team, status:String(r.Status||"").toUpperCase()}));
   const avail = items.filter(x=>x.status!=="SOLD");
   const sold = items.filter(x=>x.status==="SOLD");
 
-  document.getElementById("countTotal").textContent = items.length;
-  document.getElementById("countAvail").textContent = avail.length;
-  document.getElementById("countSold").textContent = sold.length;
+  $("#countTotal").textContent = items.length;
+  $("#countAvail").textContent = avail.length;
+  $("#countSold").textContent  = sold.length;
 
   (avail.length?avail:items).forEach(it=>{
     const card=document.createElement("div");
@@ -138,16 +152,55 @@ function render(rows){
   });
 }
 
+function normalizeRows(raw){
+  if (!Array.isArray(raw)) return [];
+  return raw.map(r=>({
+    Team: strip(r.Team||r.team||""),
+    Status: strip(r.Status||r.status||""),
+  })).filter(r=>r.Team);
+}
+
 async function loadAndRender(){
   try{
-    const res=await fetch(DATA_URL+"?cb="+Date.now(),{cache:"no-store"});
-    const rows=await res.json();
+    setStatus("Fetching…");
+    const res = await fetch(DATA_URL+"?cb="+Date.now(), {cache:"no-store"});
+    const txt = await res.text();
+    let json;
+    try {
+      json = JSON.parse(txt);
+    } catch {
+      setStatus("Endpoint returned non-JSON. Showing last good data. Press D for demo.", true);
+      return;
+    }
+    const rows = normalizeRows(json);
+    if (!rows.length){
+      setStatus("No rows received. Waiting for Zap/POST… Press D for demo.", true);
+      return;
+    }
     render(rows);
-  }catch(e){console.error(e);}
+    setStatus("Connected • "+new Date().toLocaleTimeString());
+  }catch(e){
+    setStatus("Fetch error: "+(e.message||e), true);
+  }
 }
 
 loadAndRender();
-setInterval(loadAndRender,REFRESH*1000);
+setInterval(loadAndRender, REFRESH*1000);
+
+// DEMO mode (press D to load sample rows on screen)
+document.addEventListener("keydown", (e)=>{
+  if (e.key.toLowerCase()==="d"){
+    const demo = [
+      {Team:"Yankees", Status:"SOLD"},
+      {Team:"Mariners", Status:"AVAILABLE"},
+      {Team:"Dodgers", Status:"AVAILABLE"},
+      {Team:"Cardinals", Status:"SOLD"},
+      {Team:"Rangers", Status:"AVAILABLE"}
+    ];
+    render(demo);
+    setStatus("Demo data (press D again anytime) • "+new Date().toLocaleTimeString());
+  }
+});
 </script>
 </body>
 </html>
