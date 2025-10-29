@@ -8,23 +8,20 @@
 <style>
   :root{ --bg:#0b1320; --panel:#0f2138; --mint:#9ff5d1; --neon:#f5e87a; --avail:#34f29a; --sold:#8aa0b2; }
   html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:"Signika",system-ui,sans-serif;}
-  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;gap:8px;padding:12px 14px 10px;
+  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;padding:16px 18px 12px;
         background:radial-gradient(1200px 600px at 12% 0%, #163355 0%, var(--bg) 60%);
         border:2px solid rgba(0,255,229,.18);border-radius:16px;box-shadow:0 12px 28px rgba(0,0,0,.45), inset 0 0 22px rgba(0,255,229,.08);}
-  .toprow{display:flex;justify-content:space-between;align-items:center}
-  .header{font-family:"Monoton",cursive;font-size:32px;letter-spacing:2px;color:var(--neon);
-          text-shadow:0 0 6px rgba(245,232,122,.9),0 0 18px rgba(245,232,122,.55);}
-  .status{font-size:12px;color:#cfe7ff;opacity:.85}
-  .status .err{color:#ff7b7b}
-  .counts{display:flex;gap:12px;justify-content:center;align-items:center;color:#cfe7ff;font-size:14px;}
+  .header{font-family:"Monoton",cursive;font-size:40px;letter-spacing:2px;color:var(--neon);text-align:center;
+          text-shadow:0 0 6px rgba(245,232,122,.9),0 0 18px rgba(245,232,122,.55),0 0 36px rgba(245,232,122,.35);}
+  .counts{display:flex;gap:14px;justify-content:center;align-items:center;color:#cfe7ff;font-size:14px;}
   .badge{padding:6px 10px;border-radius:999px;border:1px solid rgba(159,245,209,.3);background:rgba(159,245,209,.08);}
   .badge .v{font-weight:700;color:var(--mint);margin-left:6px}
   .badge .g{color:var(--avail);margin-left:6px}
   .badge .r{color:#ff6b6b;margin-left:6px}
-  .panel{position:relative;margin-top:4px;width:100%;flex:1 1 auto;background:linear-gradient(180deg,#0d1e33,var(--panel));
+  .panel{position:relative;margin-top:6px;width:100%;flex:1 1 auto;background:linear-gradient(180deg,#0d1e33,var(--panel));
          border:2px solid rgba(159,245,209,.25);border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.45), inset 0 0 18px rgba(159,245,209,.08);
          display:flex;flex-direction:column;overflow:hidden;}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:10px;overflow:auto;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;padding:10px;overflow:auto;}
   .card{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;background:rgba(159,245,209,.07);
         border:1px solid rgba(159,245,209,.28);box-shadow:0 3px 12px rgba(0,0,0,.28), inset 0 0 12px rgba(159,245,209,.08);color:#cfe7ff;}
   .swatch{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
@@ -46,10 +43,7 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="toprow">
-      <div class="header" id="header">The Atomic Break Board</div>
-      <div class="status" id="status">Starting…</div>
-    </div>
+    <div class="header" id="header">The Atomic Break Board</div>
     <div class="counts">
       <div class="badge">Teams <span class="v" id="countTotal">0</span></div>
       <div class="badge">Available <span class="g" id="countAvail">0</span></div>
@@ -67,140 +61,167 @@
 
 <script>
 // ===== CONFIG =====
-const DATA_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLjLQj2UZDXCj170h_znxqY7ibj4v38Juu6PxVrmwM4dsK1DXDwpR_VcDp_tMFQKny-Ynp4ypX4HwV7KWGjA4O5R4xr1bOEIS-HOS-2S4SP7Loh86Zaru_G0XaaVQZf6VgYYzEQL9uZIV1y83mhuupnZ5DhdE_ioyU3b5pCXpRZ5eGKecmfNSRWGx2cxijT1Oh64PpDahUHUcsUu5pPGtAl1CrnW4C5Uc8ILp2wvNludjdug3pXHjyWmQ-g5QJvYkeLaXGWc7D7hcYUZjK52SgE38oAIWw&lib=MsQZwM3WqQlPHIciM4oNKau_oLD-blKr1";
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2v6-URv5jiKt-jUeqhddeSqYAKE1Gr2405YGaZRvxeWFsRWMu2fAlN9j9mMz24Gp70dchwCnj7xec/pub?gid=0&single=true&output=csv";
 const HEADER  = "The Atomic Break Board";
-const REFRESH = 3;   // seconds
-const SPEED   = 22;  // px/sec ticker speed
+const REFRESH = 8;   // seconds
+const SPEED   = 22;  // px/sec for ticker
 
 document.getElementById("header").textContent = HEADER;
 
-// ---- Team colors ----
+// ---- Team color map (primary brand color) ----
 const COLORS = {
-  "Yankees":"#0C2340","Mariners":"#0C2C56","Dodgers":"#005A9C","Angels":"#BA0021","Mets":"#002D72",
-  "Astros":"#002D62","Red Sox":"#BD3039","Braves":"#13274F","Rays":"#092C5C","Padres":"#2F241D",
-  "Giants":"#FD5A1E","Cardinals":"#C41E3A","Rangers":"#003278","Cubs":"#0E3386","Pirates":"#000000",
-  "Nationals":"#AB0003","Athletics":"#003831","Diamondbacks":"#A71930","Orioles":"#DF4601",
-  "Twins":"#002B5C","Phillies":"#E81828","Tigers":"#0C2340","Blue Jays":"#134A8E","Rockies":"#33006F",
-  "Royals":"#004687","Brewers":"#12284B","White Sox":"#27251F","Marlins":"#00A3E0","Guardians":"#0C2340"
+  "Diamondbacks":"#A71930","Arizona Diamondbacks":"#A71930",
+  "Braves":"#13274F","Atlanta Braves":"#13274F",
+  "Orioles":"#DF4601","Baltimore Orioles":"#DF4601",
+  "Red Sox":"#BD3039","Boston Red Sox":"#BD3039",
+  "Cubs":"#0E3386","Chicago Cubs":"#0E3386",
+  "White Sox":"#27251F","Chicago White Sox":"#27251F",
+  "Reds":"#C6011F","Cincinnati Reds":"#C6011F",
+  "Guardians":"#0C2340","Cleveland Guardians":"#0C2340",
+  "Rockies":"#33006F","Colorado Rockies":"#33006F",
+  "Tigers":"#0C2340","Detroit Tigers":"#0C2340",
+  "Astros":"#002D62","Houston Astros":"#002D62",
+  "Royals":"#004687","Kansas City Royals":"#004687",
+  "Angels":"#BA0021","Los Angeles Angels":"#BA0021",
+  "Dodgers":"#005A9C","Los Angeles Dodgers":"#005A9C",
+  "Marlins":"#00A3E0","Miami Marlins":"#00A3E0",
+  "Brewers":"#12284B","Milwaukee Brewers":"#12284B",
+  "Twins":"#002B5C","Minnesota Twins":"#002B5C",
+  "Mets":"#002D72","New York Mets":"#002D72",
+  "Yankees":"#0C2340","New York Yankees":"#0C2340",
+  "Athletics":"#003831","Oakland Athletics":"#003831",
+  "Phillies":"#E81828","Philadelphia Phillies":"#E81828",
+  "Pirates":"#000000","Pittsburgh Pirates":"#000000",
+  "Padres":"#2F241D","San Diego Padres":"#2F241D",
+  "Giants":"#FD5A1E","San Francisco Giants":"#FD5A1E",
+  "Mariners":"#0C2C56","Seattle Mariners":"#0C2C56",
+  "Cardinals":"#C41E3A","St. Louis Cardinals":"#C41E3A",
+  "Rays":"#092C5C","Tampa Bay Rays":"#092C5C",
+  "Rangers":"#003278","Texas Rangers":"#003278",
+  "Blue Jays":"#134A8E","Toronto Blue Jays":"#134A8E",
+  "Nationals":"#AB0003","Washington Nationals":"#AB0003"
 };
-const DEFAULT_COLOR = "#6bcfc9";
+const DEFAULT_COLOR = "#6bcfc9"; // fallback mint
 
-// Helpers
-const $ = sel => document.querySelector(sel);
-const strip = s => (s||"").trim();
-const initials = n => n.split(/\s+/).map(x=>x[0]||"").join("").slice(0,3).toUpperCase();
-const colorFor = t => COLORS[t] || COLORS[t.split(" ").pop()] || DEFAULT_COLOR;
+// ---------- Helpers ----------
+const stripQuotes = (s) => (s||"").trim().replace(/^"|"$/g,"");
 
-function setStatus(msg, isErr=false){
-  const el = $("#status");
-  el.innerHTML = isErr ? `<span class="err">${msg}</span>` : msg;
+function initials(name){
+  if (!name) return "";
+  const words = name.replace(/\s+/g," ").trim().split(" ");
+  const up = (s)=>s.replace(/[^A-Za-z]/g,"").toUpperCase();
+  if (words.length === 1) return up(words[0]).slice(0,3);
+  return up(words[0][0] + (words[1][0]||"") + (words[2]?.[0]||""));
+}
+
+function colorFor(team){
+  if (!team) return DEFAULT_COLOR;
+  // exact or nickname
+  if (COLORS[team]) return COLORS[team];
+  // try to match last word (e.g., "New York Yankees" -> "Yankees")
+  const last = team.split(" ").pop();
+  return COLORS[last] || DEFAULT_COLOR;
+}
+
+function parseCSV(text){
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const header = lines[0].split(',').map(stripQuotes);
+  if (header[0] !== "Team" || header[1] !== "Status" || header[2] !== "LogoURL") return [];
+  const rows = [];
+  for (let i=1;i<lines.length;i++){
+    const line = lines[i];
+    if (!line.trim()) continue;
+    const parts = line.split(',');
+    const team = stripQuotes(parts[0]);
+    const stat = stripQuotes(parts[1]);
+    // LogoURL ignored for rendering colors, but we still parse it
+    const logo = stripQuotes(parts.slice(2).join(','));
+    if (team) rows.push({ Team: team, Status: stat, LogoURL: logo });
+  }
+  return rows;
 }
 
 function render(rows){
-  const grid = $("#grid");
-  const ticker = $("#ticker");
+  const grid = document.getElementById("grid");
+  const ticker = document.getElementById("ticker");
   grid.innerHTML = ""; ticker.innerHTML = "";
 
-  const items = rows.map(r => ({team:r.Team, status:String(r.Status||"").toUpperCase()}));
-  const avail = items.filter(x=>x.status!=="SOLD");
-  const sold = items.filter(x=>x.status==="SOLD");
+  const items = rows.map(r => ({
+    team: r.Team,
+    status: String(r.Status||"").toUpperCase()
+  }));
 
-  $("#countTotal").textContent = items.length;
-  $("#countAvail").textContent = avail.length;
-  $("#countSold").textContent  = sold.length;
+  const avail = items.filter(x => x.status !== "SOLD");
+  const sold  = items.filter(x => x.status === "SOLD");
 
-  (avail.length?avail:items).forEach(it=>{
-    const card=document.createElement("div");
-    card.className="card "+(it.status==="SOLD"?"sold":"available");
-    const sw=document.createElement("div");
-    sw.className="swatch";
-    sw.style.background=colorFor(it.team);
-    sw.textContent=initials(it.team);
-    const nm=document.createElement("div");
-    nm.className="name";
-    nm.textContent=it.team;
-    card.append(sw,nm);
-    grid.append(card);
+  document.getElementById("countTotal").textContent = items.length;
+  document.getElementById("countAvail").textContent = avail.length;
+  document.getElementById("countSold").textContent  = sold.length;
+
+  (avail.length ? avail : items).forEach(it => {
+    const card = document.createElement("div");
+    card.className = "card " + (it.status==="SOLD" ? "sold" : "available");
+
+    const sw = document.createElement("div");
+    sw.className = "swatch";
+    sw.style.background = colorFor(it.team);
+    sw.textContent = initials(it.team);
+
+    const nm  = document.createElement("div");
+    nm.className = "name";
+    nm.textContent = it.team;
+
+    card.appendChild(sw);
+    card.appendChild(nm);
+    grid.appendChild(card);
   });
 
-  const doubled=[...items,...items];
-  doubled.forEach(it=>{
-    const el=document.createElement("div");
-    el.className="ti "+(it.status==="SOLD"?"sold":"available");
-    const sw=document.createElement("div");
-    sw.className="swatch";
-    sw.style.width="22px";sw.style.height="22px";sw.style.fontSize="10px";
-    sw.style.background=colorFor(it.team);
-    sw.textContent=initials(it.team);
-    const nm=document.createElement("span");
-    nm.textContent=it.team;
-    const tag=document.createElement("span");
-    tag.className="tag "+(it.status==="SOLD"?"sd":"av");
-    tag.textContent=it.status==="SOLD"?"SOLD":"AVAILABLE";
-    el.append(sw,nm,tag);
-    ticker.append(el);
+  const doubled = [...items, ...items];
+  doubled.forEach(it => {
+    const el = document.createElement("div");
+    el.className = "ti " + (it.status==="SOLD" ? "sold" : "available");
+    const sw = document.createElement("div");
+    sw.className = "swatch"; sw.style.width="22px"; sw.style.height="22px"; sw.style.fontSize="10px";
+    sw.style.background = colorFor(it.team);
+    sw.textContent = initials(it.team);
+    const name = document.createElement("span"); name.textContent = it.team;
+    const tag  = document.createElement("span");
+    tag.className = "tag " + (it.status==="SOLD" ? "sd" : "av");
+    tag.textContent = (it.status==="SOLD" ? "SOLD" : "AVAILABLE");
+    el.appendChild(sw); el.appendChild(name); el.appendChild(tag);
+    ticker.appendChild(el);
   });
 
-  requestAnimationFrame(()=>{
-    const totalW=Array.from(ticker.children).reduce((w,e)=>w+e.getBoundingClientRect().width+20,0);
-    const dur=Math.max(6,totalW/(SPEED||22)/2);
-    ticker.style.width=totalW+"px";
-    let st=document.getElementById("ab_scroll_style");
-    if(!st){st=document.createElement("style");st.id="ab_scroll_style";document.head.appendChild(st);}
-    st.textContent="@keyframes ab_scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}";
-    ticker.style.animation=`ab_scroll ${dur}s linear infinite`;
+  // Ticker animation (CSS keyframes injected once)
+  requestAnimationFrame(() => {
+    const totalW = Array.from(ticker.children).reduce((w,el)=> w + el.getBoundingClientRect().width + 20, 0);
+    const half = totalW / 2;
+    const dur  = Math.max(6, half / (SPEED || 22));
+    ticker.style.width = totalW + "px";
+    let st = document.getElementById("ab_scroll_style");
+    if (!st){ st = document.createElement("style"); st.id = "ab_scroll_style"; document.head.appendChild(st); }
+    st.textContent = "@keyframes ab_scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}";
+    ticker.style.animation = `ab_scroll ${dur}s linear infinite`;
   });
-}
-
-function normalizeRows(raw){
-  if (!Array.isArray(raw)) return [];
-  return raw.map(r=>({
-    Team: strip(r.Team||r.team||""),
-    Status: strip(r.Status||r.status||""),
-  })).filter(r=>r.Team);
 }
 
 async function loadAndRender(){
   try{
-    setStatus("Fetching…");
-    const res = await fetch(DATA_URL+"?cb="+Date.now(), {cache:"no-store"});
-    const txt = await res.text();
-    let json;
-    try {
-      json = JSON.parse(txt);
-    } catch {
-      setStatus("Endpoint returned non-JSON. Showing last good data. Press D for demo.", true);
-      return;
-    }
-    const rows = normalizeRows(json);
-    if (!rows.length){
-      setStatus("No rows received. Waiting for Zap/POST… Press D for demo.", true);
-      return;
-    }
+    // CORS-safe CSV fetch through AllOrigins + cache-bust
+    const base = CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "cb=" + Date.now();
+    const prox = "https://api.allorigins.win/raw?url=" + encodeURIComponent(base);
+    const res  = await fetch(prox, { cache: "no-store" });
+    const txt  = await res.text();
+    const rows = parseCSV(txt);
     render(rows);
-    setStatus("Connected • "+new Date().toLocaleTimeString());
   }catch(e){
-    setStatus("Fetch error: "+(e.message||e), true);
+    console.error(e);
   }
 }
 
 loadAndRender();
-setInterval(loadAndRender, REFRESH*1000);
-
-// DEMO mode (press D to load sample rows on screen)
-document.addEventListener("keydown", (e)=>{
-  if (e.key.toLowerCase()==="d"){
-    const demo = [
-      {Team:"Yankees", Status:"SOLD"},
-      {Team:"Mariners", Status:"AVAILABLE"},
-      {Team:"Dodgers", Status:"AVAILABLE"},
-      {Team:"Cardinals", Status:"SOLD"},
-      {Team:"Rangers", Status:"AVAILABLE"}
-    ];
-    render(demo);
-    setStatus("Demo data (press D again anytime) • "+new Date().toLocaleTimeString());
-  }
-});
+setInterval(loadAndRender, Math.max(3, REFRESH) * 1000);
 </script>
 </body>
 </html>
